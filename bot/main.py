@@ -134,7 +134,7 @@ async def limit_command(client, message):
     can_dl = user_limits.can_download(user_id)
     await message.reply(f"Can download: {can_dl}")
 
-@app.on_message(filters.text & ~filters.command)
+@app.on_message(filters.text)
 async def handle_url(client, message):
     url = message.text.strip()
     if not url.startswith(('http://', 'https://')):
@@ -144,7 +144,7 @@ async def handle_url(client, message):
     await download_queue.put((user_id, url, message))
     await message.reply("Added to queue.")
 
-async def main():
+def main():
     os.makedirs(TEMP_DIR, exist_ok=True)
     os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -156,7 +156,8 @@ async def main():
     # Start download worker
     asyncio.create_task(download_worker())
 
-    await app.run()
+    # Run the bot (this handles the event loop)
+    app.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()

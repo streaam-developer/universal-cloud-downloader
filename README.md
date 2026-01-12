@@ -75,7 +75,7 @@ MAX_DISK_USAGE_GB=10
 ### 5. Run the Bot
 
 ```bash
-python bot/main.py
+python -m bot.main
 ```
 
 ## Deployment
@@ -90,7 +90,7 @@ COPY requirements.txt .
 RUN pip install -r requirements.txt
 
 COPY . .
-CMD ["python", "bot/main.py"]
+CMD ["python", "-m", "bot.main"]
 ```
 
 Build and run:
@@ -105,12 +105,12 @@ docker run -e API_ID=... -e API_HASH=... -e BOT_TOKEN=... downloader-bot
 1. Install Python 3.9+
 2. Install dependencies: `pip install -r requirements.txt`
 3. Set environment variables
-4. Run: `python bot/main.py`
+4. Run: `python -m bot.main`
 
 ### Railway/Render
 
 1. Set environment variables in dashboard
-2. Deploy as Python app with `python bot/main.py` as start command
+2. Deploy as Python app with `python -m bot.main` as start command
 
 ## Bot Commands
 
