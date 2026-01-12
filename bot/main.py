@@ -152,6 +152,7 @@ async def worker(name):
 @app.on_message(filters.command("start"))
 async def start_command(client: Client, message: Message):
     """Handler for the /start command."""
+    logger.info("Start command received")
     welcome_message = (
         "**Welcome to the Universal Cloud Downloader Bot!**\n\n"
         "I can download files from various cloud hosting platforms and send them to you directly.\n\n"
