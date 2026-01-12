@@ -207,7 +207,7 @@ async def limit_command(client: Client, message: Message):
     )
     await message.reply_text(limit_message)
 
-@app.on_message(filters.text & ~filters.command)
+@app.on_message(filters.text & ~filters.command(["start", "help", "status", "queue", "cancel", "limit"]))
 async def message_handler(client: Client, message: Message):
     """Handler for general text messages."""
     if is_valid_url(message.text):
