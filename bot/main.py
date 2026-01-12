@@ -271,6 +271,7 @@ async def limit_command(client: Client, message: Message):
 @app.on_message(filters.text & ~filters.command(["start", "help", "status", "queue", "cancel", "limit"]))
 async def message_handler(client: Client, message: Message):
     """Handler for general text messages."""
+    logger.info(f"Received message: {message.text}")
     if is_valid_url(message.text):
         job = (message.chat.id, message.id, message.text)
         await download_queue.put(job)
