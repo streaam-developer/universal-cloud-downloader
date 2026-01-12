@@ -1,7 +1,7 @@
 import asyncio
 import os
 import tempfile
-from pyrogram import Client, filters
+from pyrogram import Client, filters, idle
 from pyrogram.types import Message
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from dotenv import load_dotenv
@@ -144,7 +144,7 @@ async def handle_url(client, message):
     await download_queue.put((user_id, url, message))
     await message.reply("Added to queue.")
 
-def main():
+async def main():
     os.makedirs(TEMP_DIR, exist_ok=True)
     os.makedirs(CACHE_DIR, exist_ok=True)
 
@@ -153,11 +153,18 @@ def main():
     scheduler.add_job(cleaner.run_cleanup, 'interval', hours=1)
     scheduler.start()
 
+    # Start the bot
+    await app.start()
+
     # Start download worker
     asyncio.create_task(download_worker())
 
-    # Run the bot (this handles the event loop)
-    app.run()
+    # Wait until the bot is stopped
+    await idle()
+
+    # Stop the bot and scheduler
+    await app.stop()
+    scheduler.shutdown()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
