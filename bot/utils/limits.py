@@ -1,17 +1,14 @@
 
 import os
 import time
-from collections import defaultdict
-
-# In-memory storage for user limits.
-# For a production environment, consider a more persistent storage like Redis.
-user_usage = defaultdict(lambda: {"count": 0, "bytes": 0, "timestamp": time.time()})
+from datetime import datetime, date
+from bot.utils.database import users_collection
 
 # Get limits from environment variables
 DAILY_DOWNLOAD_LIMIT = int(os.getenv("DAILY_DOWNLOAD_LIMIT", 10))
 DAILY_BYTE_LIMIT = int(os.getenv("DAILY_BYTE_LIMIT", 5 * 1024 * 1024 * 1024)) # 5GB
 
-def check_limits(user_id: int) -> (bool, str):
+async def check_limits(user_id: int) -> (bool, str):
     """
     Checks if a user has exceeded their daily download limits.
 
@@ -21,14 +18,24 @@ def check_limits(user_id: int) -> (bool, str):
     Returns:
         A tuple of (can_download, reason).
     """
-    now = time.time()
-    usage = user_usage[user_id]
+    if users_collection is None:
+        return True, "" # No limits if no database
+
+    today = date.today().isoformat()
+    
+    usage = await users_collection.find_one({"user_id": user_id})
+
+    if not usage:
+        return True, ""
 
     # Reset usage if it's a new day
-    if now - usage["timestamp"] > 86400: # 24 hours
+    if usage.get("date") != today:
+        await users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {"count": 0, "bytes": 0, "date": today}}
+        )
         usage["count"] = 0
         usage["bytes"] = 0
-        usage["timestamp"] = now
 
     if usage["count"] >= DAILY_DOWNLOAD_LIMIT:
         return False, "You have reached your daily download limit."
@@ -38,7 +45,7 @@ def check_limits(user_id: int) -> (bool, str):
 
     return True, ""
 
-def update_usage(user_id: int, downloaded_bytes: int):
+async def update_usage(user_id: int, downloaded_bytes: int):
     """
     Updates a user's download usage.
 
@@ -46,5 +53,31 @@ def update_usage(user_id: int, downloaded_bytes: int):
         user_id: The ID of the user.
         downloaded_bytes: The number of bytes downloaded.
     """
-    user_usage[user_id]["count"] += 1
-    user_usage[user_id]["bytes"] += downloaded_bytes
+    if users_collection is None:
+        return
+
+    today = date.today().isoformat()
+
+    await users_collection.update_one(
+        {"user_id": user_id},
+        {
+            "$inc": {"count": 1, "bytes": downloaded_bytes},
+            "$set": {"date": today}
+        },
+        upsert=True
+    )
+
+async def get_user_usage(user_id: int):
+    """
+    Gets a user's current usage.
+    """
+    if users_collection is None:
+        return {"count": 0, "bytes": 0}
+
+    today = date.today().isoformat()
+    usage = await users_collection.find_one({"user_id": user_id})
+
+    if not usage or usage.get("date") != today:
+        return {"count": 0, "bytes": 0}
+        
+    return usage

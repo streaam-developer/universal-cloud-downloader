@@ -1,9 +1,7 @@
 
-# A simple in-memory cache
-# For a production environment, you might want to use a more persistent cache like Redis.
-url_cache = {}
+from bot.utils.database import cache_collection
 
-def get_from_cache(url: str):
+async def get_from_cache(url: str):
     """
     Gets a file_id from the cache.
 
@@ -13,9 +11,15 @@ def get_from_cache(url: str):
     Returns:
         The file_id if found, otherwise None.
     """
-    return url_cache.get(url)
+    if cache_collection is None:
+        return None
+        
+    cached = await cache_collection.find_one({"url": url})
+    if cached:
+        return cached.get("file_id")
+    return None
 
-def add_to_cache(url: str, file_id: str):
+async def add_to_cache(url: str, file_id: str):
     """
     Adds a file_id to the cache.
 
@@ -23,5 +27,11 @@ def add_to_cache(url: str, file_id: str):
         url: The URL to cache.
         file_id: The file_id of the uploaded file.
     """
-    url_cache[url] = file_id
+    if cache_collection is None:
+        return
 
+    await cache_collection.update_one(
+        {"url": url},
+        {"$set": {"file_id": file_id}},
+        upsert=True
+    )

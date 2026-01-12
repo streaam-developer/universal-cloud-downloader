@@ -8,3 +8,4 @@ python-dotenv
 aria2p
 psutil
 aiohttp
+motor
